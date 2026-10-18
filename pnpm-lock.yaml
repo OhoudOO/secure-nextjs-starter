@@ -10,16 +10,16 @@ importers:
     dependencies:
       next:
         specifier: 16.4.2
-        version: 16.4.2(@babel/core@7.29.7)(@types/node@22.20.5)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+        version: 16.4.2(@babel/core@7.29.7)(@types/node@22.20.5)(react-dom@19.2.3(react@19.3.0))(react@19.3.0)
       next-auth:
         specifier: 5.0.0-beta.32
-        version: 5.0.0-beta.32(next@16.4.2(@babel/core@7.29.7)(@types/node@22.20.5)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)
+        version: 5.0.0-beta.32(next@16.4.2(@babel/core@7.29.7)(@types/node@22.20.5)(react-dom@19.2.3(react@19.3.0))(react@19.3.0))(react@19.3.0)
       react:
-        specifier: 19.2.3
-        version: 19.2.3
+        specifier: 19.3.0
+        version: 19.3.0
       react-dom:
         specifier: 19.2.3
-        version: 19.2.3(react@19.2.3)
+        version: 19.2.3(react@19.3.0)
       zod:
         specifier: ^4.4.3
         version: 4.6.7
@@ -1799,8 +1799,8 @@ packages:
   react-is@16.13.1:
     resolution: {integrity: sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==}
 
-  react@19.2.3:
-    resolution: {integrity: sha512-Ku/hhYbVjOQnXDZFv2+RibmLFGwFdeeKHFcOTlrt7xplBnya5OGn/hIRDsqDiSUcfORsDC7MPxwork8jBwsIWA==}
+  react@19.3.0:
+    resolution: {integrity: sha512-E8LUcbtBWt20bbl2YoHfx4ZDBdxVTfOKtCZn9cDSJ4l6/nuoApcpIBcj47t2wZoVX8g2ZHuMHbiShgCR1T5Sog==}
     engines: {node: '>=0.10.0'}
 
   reflect.getprototypeof@1.0.10:
@@ -3846,22 +3846,22 @@ snapshots:
 
   natural-compare@1.4.0: {}
 
-  next-auth@5.0.0-beta.32(next@16.4.2(@babel/core@7.29.7)(@types/node@22.20.5)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3):
+  next-auth@5.0.0-beta.32(next@16.4.2(@babel/core@7.29.7)(@types/node@22.20.5)(react-dom@19.2.3(react@19.3.0))(react@19.3.0))(react@19.3.0):
     dependencies:
       '@auth/core': 0.41.3
-      next: 16.4.2(@babel/core@7.29.7)(@types/node@22.20.5)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      react: 19.2.3
+      next: 16.4.2(@babel/core@7.29.7)(@types/node@22.20.5)(react-dom@19.2.3(react@19.3.0))(react@19.3.0)
+      react: 19.3.0
 
-  next@16.4.2(@babel/core@7.29.7)(@types/node@22.20.5)(react-dom@19.2.3(react@19.2.3))(react@19.2.3):
+  next@16.4.2(@babel/core@7.29.7)(@types/node@22.20.5)(react-dom@19.2.3(react@19.3.0))(react@19.3.0):
     dependencies:
       '@next/env': 16.4.2
       '@swc/helpers': 0.5.23
       baseline-browser-mapping: 2.11.29
       caniuse-lite: 1.0.30001816
       postcss: 8.5.23
-      react: 19.2.3
-      react-dom: 19.2.3(react@19.2.3)
-      styled-jsx: 5.1.6(@babel/core@7.29.7)(react@19.2.3)
+      react: 19.3.0
+      react-dom: 19.2.3(react@19.3.0)
+      styled-jsx: 5.1.6(@babel/core@7.29.7)(react@19.3.0)
     optionalDependencies:
       '@next/swc-darwin-arm64': 16.4.2
       '@next/swc-darwin-x64': 16.4.2
@@ -4006,14 +4006,14 @@ snapshots:
 
   queue-microtask@1.2.3: {}
 
-  react-dom@19.2.3(react@19.2.3):
+  react-dom@19.2.3(react@19.3.0):
     dependencies:
-      react: 19.2.3
+      react: 19.3.0
       scheduler: 0.27.0
 
   react-is@16.13.1: {}
 
-  react@19.2.3: {}
+  react@19.3.0: {}
 
   reflect.getprototypeof@1.0.10:
     dependencies:
@@ -4260,10 +4260,10 @@ snapshots:
 
   strip-json-comments@3.1.1: {}
 
-  styled-jsx@5.1.6(@babel/core@7.29.7)(react@19.2.3):
+  styled-jsx@5.1.6(@babel/core@7.29.7)(react@19.3.0):
     dependencies:
       client-only: 0.0.1
-      react: 19.2.3
+      react: 19.3.0
     optionalDependencies:
       '@babel/core': 7.29.7
 
