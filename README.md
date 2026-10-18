@@ -33,4 +33,6 @@ pnpm test && pnpm typecheck && pnpm lint
   `/dashboard` redirects signed-out users; `/api/notes/1` returns 401 without a session; the contact API rejects bad
   input and unknown fields with 400 and returns 429 after the hourly limit.
 - Docker image: builds, runs as `node`, has no npm, and Trivy finds 0 HIGH/CRITICAL fixable vulnerabilities.
+- The quick-scan toolkit's `review.sh` on this repository: no secrets, and 11 low findings only (unpinned base
+  image digests, `apk upgrade`, untranslated JSX text), none medium or above.
 - Not covered: the GitHub sign-in flow itself (needs a real OAuth app).
