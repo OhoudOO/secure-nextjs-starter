@@ -1,0 +1,7 @@
+# Blocks commits that contain secrets, before they reach Git history.
+# Developers run once: pip install pre-commit && pre-commit install
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks

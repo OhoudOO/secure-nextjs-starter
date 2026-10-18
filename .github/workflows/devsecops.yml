@@ -1,0 +1,131 @@
+# DevSecOps pipeline: secrets, code, dependencies, IaC and container image checks.
+# Report-only by default. Set the repository variable DEVSECOPS_ENFORCE=true to block
+# merges on HIGH/CRITICAL findings (Settings → Secrets and variables → Actions → Variables).
+name: devsecops
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: devsecops-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  ENFORCE: ${{ vars.DEVSECOPS_ENFORCE == 'true' }}
+  # Scanner images pinned by version and digest; Dependabot keeps them current.
+  GITLEAKS_IMAGE: zricethezav/gitleaks:v8.30.1@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f
+  SEMGREP_IMAGE: semgrep/semgrep:1.179.0@sha256:93963d9295a366f59e4850127b1550400ee7b388f04fe144e4a1f6325d96e01b
+  TRIVY_IMAGE: aquasec/trivy:0.76.0@sha256:2416d1f74045b57274df1a340eee6b510cacd73c66a6ccb8da092b117eb7d222
+
+jobs:
+  secrets:
+    name: Secrets (gitleaks, full history)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Scan
+        run: |
+          # The safe.directory setting lets git in the container read the runner-owned checkout.
+          docker run --rm -e GIT_CONFIG_COUNT=1 -e GIT_CONFIG_KEY_0=safe.directory -e GIT_CONFIG_VALUE_0=/src \
+            -v "$GITHUB_WORKSPACE:/src" "$GITLEAKS_IMAGE" \
+            git /src --redact --no-banner --exit-code 0 \
+            --report-format json --report-path /src/gitleaks.json
+          count=$(jq length gitleaks.json)
+          echo "### Secrets: $count finding(s)" >> "$GITHUB_STEP_SUMMARY"
+          jq -r '.[] | "- \(.RuleID) in `\(.File):\(.StartLine)` (commit \(.Commit[0:7]))"' gitleaks.json >> "$GITHUB_STEP_SUMMARY"
+          if [ "$ENFORCE" = "true" ] && [ "$count" -gt 0 ]; then echo "::error::Secrets found"; exit 1; fi
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: gitleaks
+          path: gitleaks.json
+          retention-days: 14
+
+  code:
+    name: Code (Semgrep)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Scan
+        run: |
+          docker run --rm -v "$GITHUB_WORKSPACE:/src" -w /src "$SEMGREP_IMAGE" \
+            semgrep scan --config p/default --metrics=off --disable-version-check --quiet \
+            --json -o /src/semgrep.json /src || true
+          blocking=$(jq '[.results[] | select(.extra.severity == "ERROR")] | length' semgrep.json)
+          total=$(jq '.results | length' semgrep.json)
+          echo "### Code: $total finding(s), $blocking high severity" >> "$GITHUB_STEP_SUMMARY"
+          jq -r '.results[] | "- \(.extra.severity) \(.check_id | split(".") | last) in `\(.path | ltrimstr("/src/")):\(.start.line)`"' semgrep.json >> "$GITHUB_STEP_SUMMARY"
+          if [ "$ENFORCE" = "true" ] && [ "$blocking" -gt 0 ]; then echo "::error::High severity code findings"; exit 1; fi
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: semgrep
+          path: semgrep.json
+          retention-days: 14
+
+  dependencies-and-iac:
+    name: Dependencies and IaC (Trivy)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Scan
+        run: |
+          code=0
+          [ "$ENFORCE" = "true" ] && code=1
+          docker run --rm -v "$GITHUB_WORKSPACE:/src" "$TRIVY_IMAGE" fs /src --quiet \
+            --scanners vuln,misconfig --severity HIGH,CRITICAL --ignore-unfixed \
+            --format table --table-mode detailed --exit-code "$code" | tee trivy-fs.txt
+      - name: Summary
+        if: always()
+        run: |
+          { echo "### Dependencies and IaC (HIGH/CRITICAL, fixable)"; echo '```'; cat trivy-fs.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+  container:
+    name: Container image (Trivy + SBOM)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build
+        id: build
+        run: |
+          if [ ! -f Dockerfile ]; then echo "No Dockerfile, skipping"; echo "skip=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          docker build --pull -t app:ci .
+      - name: Scan image
+        if: steps.build.outputs.skip != 'true'
+        run: |
+          code=0
+          [ "$ENFORCE" = "true" ] && code=1
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$GITHUB_WORKSPACE:/out" "$TRIVY_IMAGE" \
+            image --quiet --format cyclonedx -o /out/sbom.cdx.json app:ci
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock "$TRIVY_IMAGE" image app:ci --quiet \
+            --scanners vuln,misconfig --severity HIGH,CRITICAL --ignore-unfixed \
+            --format table --table-mode detailed --exit-code "$code" | tee trivy-image.txt
+      - name: Summary
+        if: always() && steps.build.outputs.skip != 'true'
+        run: |
+          { echo "### Container image (HIGH/CRITICAL, fixable)"; echo '```'; cat trivy-image.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always() && steps.build.outputs.skip != 'true'
+        with:
+          name: sbom
+          path: sbom.cdx.json
+          retention-days: 90
